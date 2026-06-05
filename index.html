@@ -118,19 +118,16 @@ body {
   backdrop-filter: blur(4px);
 }
 
-/* ===== 📸 핵심: 4개 / 5개 2줄 사진 그리드 ===== */
+/* ===== 📸 100% 안전한 4개 / 5개 Flexbox 그리드 ===== */
 .photos-grid {
-  display: grid;
-  grid-template-columns: repeat(20, 1fr); /* 20칸으로 쪼개서 비율을 맞춤 */
-  gap: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
 }
-/* 1~4번째 사진: 각각 5칸씩 차지 (20 / 5 = 한 줄에 4개) */
-.photo-card:nth-child(-n+4) { grid-column: span 5; }
-/* 5~9번째 사진: 각각 4칸씩 차지 (20 / 4 = 한 줄에 5개) */
-.photo-card:nth-child(n+5) { grid-column: span 4; }
-
-/* ===== 폴라로이드 카드 디자인 (세련된 스타일) ===== */
+/* 1~4번째 (첫 줄) 사진: 4개 배치 */
 .photo-card {
+  width: calc(25% - 15px);
   background: #ffffff;
   padding: 12px 12px 60px;
   border-radius: 8px;
@@ -140,13 +137,17 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* 5~9번째 (둘째 줄) 사진: 5개 배치 */
+.photo-card:nth-child(n+5) {
+  width: calc(20% - 16px);
+}
 .photo-card:hover {
   transform: translateY(-8px);
   z-index: 10;
   box-shadow: 0 12px 24px rgba(0,0,0,0.12);
 }
 
-/* 핀(마스킹 테이프 스타일로 변경) */
+/* 핀(마스킹 테이프 스타일) */
 .tape {
   position: absolute;
   top: -10px; left: 50%;
@@ -198,16 +199,17 @@ body {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   color: #a4b0be; font-size: 0.9rem; font-weight: 500;
+  background: #f1f2f6;
 }
 .photo-placeholder .ph-icon { font-size: 2.5rem; margin-bottom: 8px; color: #ced6e0; }
 
-/* 사진 번호 캡션 (손글씨 느낌) */
+/* 사진 번호 캡션 */
 .photo-caption {
   text-align: center;
   padding: 12px 4px 0;
   color: #2f3640; 
   font-size: 1.2rem;
-  font-family: 'Gaegu', sans-serif; /* 손글씨 폰트 적용 */
+  font-family: 'Gaegu', sans-serif;
 }
 
 /* ===== 스티커 투표 버튼 ===== */
@@ -257,13 +259,15 @@ body {
 }
 .btn-secondary:hover { background: #2d3436; transform: translateY(-2px); }
 
-/* 모바일 반응형 (화면이 작아지면 2개씩 배열) */
-@media (max-width: 900px) {
-  .photos-grid { grid-template-columns: repeat(2, 1fr); }
-  .photo-card:nth-child(n) { grid-column: span 1; }
+/* 모바일 반응형 (화면이 작아지면 자동으로 줄바꿈) */
+@media (max-width: 1024px) {
+  .photo-card, .photo-card:nth-child(n+5) { width: calc(33.33% - 14px); }
+}
+@media (max-width: 768px) {
+  .photo-card, .photo-card:nth-child(n+5) { width: calc(50% - 10px); }
 }
 @media (max-width: 480px) {
-  .photos-grid { grid-template-columns: 1fr; }
+  .photo-card, .photo-card:nth-child(n+5) { width: 100%; }
   .header-board { padding: 20px 10px; }
 }
 
@@ -308,7 +312,7 @@ body {
 .result-list li:nth-child(2) { background: #f1f2f6; border-color: #dfe4ea; }
 .result-list li:nth-child(3) { background: #fff3e0; border-color: #ffe0b2; }
 
-/* 관리자, 토스트 등 기존 스타일 간소화 유지 */
+/* 관리자, 토스트 */
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .upload-card { background: #f8f9fa; border: 1px solid #dcdcdc; border-radius: 8px; padding: 12px; text-align: center; }
 .upload-card .thumb { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 4px; margin: 8px 0; }
@@ -393,10 +397,13 @@ body {
 <div id="toast" class="toast"></div>
 
 <script>
+// ==========================================
+// 기본 설정
+// ==========================================
 const CHILDREN = ['양솔','이건우','박지수','김호현','좌시안','남아영','윤아성','박다온','신지민'];
 const STICKERS = ['⭐','💖','🎉','✨'];
 const ADMIN_PW = '복사단2026';
-const MAX_VOTES = 50; // 종료 기준 투표수(명)
+const MAX_VOTES = 50; 
 
 const photoSrc = (cat, i) => `photos/${cat}_${i+1}.jpg`;
 
@@ -411,7 +418,9 @@ const getMyVotes  = () => { try { return JSON.parse(localStorage.getItem(KEY_MYV
 const saveVotes   = d => localStorage.setItem(KEY_VOTES,   JSON.stringify(d));
 const saveMyVotes = d => localStorage.setItem(KEY_MYVOTES, JSON.stringify(d));
 
-// 투표수(참여자 수) 계산 및 프로그레스 바 업데이트
+// ==========================================
+// 진행률 업데이트
+// ==========================================
 function updateProgress() {
   const votes = getVotes();
   let total = 0;
@@ -424,6 +433,9 @@ function updateProgress() {
   return total;
 }
 
+// ==========================================
+// 화면 렌더링 (에러 없는 100% 안전한 문자열 조합 방식)
+// ==========================================
 function renderGrids() {
   renderGrid('landscape');
   renderGrid('portrait');
@@ -432,66 +444,68 @@ function renderGrids() {
 
 function renderGrid(cat) {
   const grid = document.getElementById('grid-' + cat);
-  grid.innerHTML = '';
   const photos  = getPhotos();
   const votes   = getVotes();
   const myVotes = getMyVotes();
+
+  let htmlString = '';
 
   CHILDREN.forEach((name, i) => {
     const pid = cat + '_' + i;
     const src = photos[pid] || photoSrc(cat, i);
 
-    const card = document.createElement('div');
-    card.className = 'photo-card';
-    card.id = 'card-' + pid;
-
-    // 마스킹 테이프 장식
-    card.innerHTML += `<div class="tape"></div>`;
-    // 번호
-    card.innerHTML += `<div class="photo-number">${i+1}</div>`;
-
-    // 총 스티커 수 계산
+    // 총 스티커 수
     let total = 0;
     STICKERS.forEach(e => { total += (votes[pid+'_'+e] || 0); });
-    if (total > 0) card.innerHTML += `<div class="total-badge">🌟${total}</div>`;
 
-    // 사진 영역
-    const imgWrap = document.createElement('div');
-    imgWrap.className = 'photo-img-wrap';
-    if (src) {
-      imgWrap.innerHTML = `<img src="${src}" alt="사진 ${i+1}" onerror="this.outerHTML='<div class=\\'photo-placeholder\\'><span class=\\'ph-icon\\'>📷</span>사진 준비중</div>'">`;
-    }
-    card.appendChild(imgWrap);
-
-    // 이름/번호 캡션
-    card.innerHTML += `<div class="photo-caption">No.${i+1}</div>`;
-
-    // 스티커 버튼 영역
-    const sa = document.createElement('div');
-    sa.className = 'sticker-area';
+    // 스티커 버튼 HTML 생성
+    let stickersHtml = '';
     STICKERS.forEach(emoji => {
       const vk    = pid + '_' + emoji;
       const cnt   = votes[vk] || 0;
       const voted = !!myVotes[vk];
-      const btn   = document.createElement('button');
-      btn.className = 'sticker-btn' + (voted ? ' voted' : '');
-      btn.innerHTML = `<span class="emoji">${emoji}</span><span class="cnt">${cnt || ''}</span>`;
-      
-      btn.onclick = ev => { ev.stopPropagation(); doVote(pid, emoji, i, cat, ev); };
-      sa.appendChild(btn);
+      stickersHtml += `
+        <button class="sticker-btn ${voted ? 'voted' : ''}" onclick="event.stopPropagation(); doVote('${pid}', '${emoji}', '${cat}')">
+          <span class="emoji">${emoji}</span><span class="cnt">${cnt || ''}</span>
+        </button>
+      `;
     });
-    card.appendChild(sa);
 
-    grid.appendChild(card);
+    // 전체 카드 HTML 결합 (사진 실패시 오류 안나게 안전 처리)
+    htmlString += `
+      <div class="photo-card" id="card-${pid}">
+        <div class="tape"></div>
+        <div class="photo-number">${i+1}</div>
+        ${total > 0 ? `<div class="total-badge">🌟${total}</div>` : ''}
+        
+        <div class="photo-img-wrap">
+          <img src="${src}" alt="사진 ${i+1}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="photo-placeholder" style="display:none;">
+            <span class="ph-icon">📷</span>
+            <span>사진 준비중</span>
+          </div>
+        </div>
+
+        <div class="photo-caption">No.${i+1} <span style="font-size:0.95rem; color:#777;">${name}</span></div>
+        
+        <div class="sticker-area">
+          ${stickersHtml}
+        </div>
+      </div>
+    `;
   });
+
+  grid.innerHTML = htmlString;
 }
 
-function doVote(pid, emoji, idx, cat, event) {
+// ==========================================
+// 투표 처리 로직
+// ==========================================
+function doVote(pid, emoji, cat) {
   const votes   = getVotes();
   const myVotes = getMyVotes();
   const vk      = pid + '_' + emoji;
   
-  // 50명 초과 검사 로직 (새로운 투표일 경우만 막음, 본인 취소는 허용)
   let currentTotal = updateProgress();
   if (currentTotal >= MAX_VOTES && !myVotes[vk]) {
     alert('🎉 이미 50명의 투표가 모두 채워져 콘테스트가 종료되었습니다!');
@@ -511,43 +525,20 @@ function doVote(pid, emoji, idx, cat, event) {
 
   saveVotes(votes);
   saveMyVotes(myVotes);
-  refreshCard(pid, cat);
+  renderGrids(); // 안전하게 전체 화면 다시 그리기
   
-  // 방금 클릭으로 50명 도달 시 팝업 및 결과창
   let newTotal = updateProgress();
-  if (newTotal >= MAX_VOTES && !myVotes[vk]) { // 방금 투표했다면
+  if (newTotal >= MAX_VOTES && !myVotes[vk]) { 
     setTimeout(() => {
       alert('🎉 50명 투표가 완료되었습니다! 최종 결과를 확인해보세요.');
       openResult();
-    }, 500);
+    }, 300);
   }
 }
 
-function refreshCard(pid, cat) {
-  const votes   = getVotes();
-  const myVotes = getMyVotes();
-  const card    = document.getElementById('card-' + pid);
-  if (!card) return;
-
-  let total = 0;
-  STICKERS.forEach(e => { total += (votes[pid+'_'+e] || 0); });
-  let tb = card.querySelector('.total-badge');
-  if (total > 0) {
-    if (!tb) { tb = document.createElement('div'); tb.className = 'total-badge'; card.appendChild(tb); }
-    tb.textContent = '🌟' + total;
-  } else if (tb) { tb.remove(); }
-
-  const btns = card.querySelectorAll('.sticker-btn');
-  STICKERS.forEach((emoji, i) => {
-    const vk  = pid + '_' + emoji;
-    const cnt = votes[vk] || 0;
-    if (btns[i]) {
-      btns[i].className = 'sticker-btn' + (myVotes[vk] ? ' voted' : '');
-      btns[i].querySelector('.cnt').textContent = cnt || '';
-    }
-  });
-}
-
+// ==========================================
+// 탭 전환 & 부가 기능
+// ==========================================
 function switchTab(cat, btn) {
   document.querySelectorAll('.board-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -563,9 +554,11 @@ function openResult() {
   const medals = ['🥇 1등','🥈 2등','🥉 3등','4등','5등','6등','7등','8등','9등'];
   function renderRank(list) {
     return list.map((it,rank) => `
-      <li><span style="min-width:60px; font-weight:700; color:#d63031">${medals[rank]}</span> 
-      <span style="flex:1; color:#2c3e50">${it.name} (No.${it.i+1})</span> 
-      <span style="font-weight:700;">${it.s}표</span></li>`).join('');
+      <li>
+        <span style="min-width:60px; font-weight:700; color:#d63031">${medals[rank]}</span> 
+        <span style="flex:1; color:#2c3e50">${it.name} (No.${it.i+1})</span> 
+        <span style="font-weight:700;">${it.s}표</span>
+      </li>`).join('');
   }
 
   document.getElementById('result-content').innerHTML = `
@@ -590,21 +583,22 @@ function buildAdminPanel() {
   const photos = getPhotos();
   ['landscape','portrait'].forEach(cat => {
     const cont = document.getElementById('upload-' + cat);
-    cont.innerHTML = '';
+    let adminHtml = '';
     CHILDREN.forEach((name, i) => {
       const pid  = cat + '_' + i;
       const displaySrc = photos[pid] || photoSrc(cat, i);
-      const div = document.createElement('div');
-      div.className = 'upload-card';
-      div.innerHTML = `
-        <div style="font-weight:700; margin-bottom:5px;">${name}</div>
-        ${displaySrc ? `<img class="thumb" src="${displaySrc}" onerror="this.outerHTML='<div style=\\'padding:20px;background:#eee;\\' >📷</div>'">` : ''}
-        <label style="display:block; font-size:0.85rem; color:#0984e3; cursor:pointer;">사진 변경
-          <input type="file" accept="image/*" style="display:none;" onchange="uploadPhoto(this,'${pid}')">
-        </label>
+      adminHtml += `
+        <div class="upload-card">
+          <div style="font-weight:700; margin-bottom:5px;">${name}</div>
+          <img class="thumb" src="${displaySrc}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="photo-placeholder" style="display:none; height:100px; padding-top:20px;">📷 준비중</div>
+          <label style="display:block; font-size:0.85rem; color:#0984e3; cursor:pointer;">새 사진 등록
+            <input type="file" accept="image/*" style="display:none;" onchange="uploadPhoto(this,'${pid}')">
+          </label>
+        </div>
       `;
-      cont.appendChild(div);
     });
+    cont.innerHTML = adminHtml;
   });
 }
 
@@ -634,6 +628,7 @@ function showToast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// 최초 화면 그리기 시작
 renderGrids();
 </script>
 </body>
