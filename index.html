@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 우도순례 사진 콘테스트 v.3.2 (시각 효과 업그레이드)</title>
+<title>📸 우도순례 사진 콘테스트 v.3.3 (참여 인원 계산)</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -50,24 +50,10 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 .photo-number { position: absolute; top: 18px; left: 18px; background: rgba(0,0,0,0.6); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; z-index: 3; }
 .total-badge { position: absolute; top: 18px; right: 18px; background: #ff6b6b; color: white; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700; z-index: 3; box-shadow: 0 2px 6px rgba(255,107,107,0.4); }
 
-/* 사진 프레임 영역 (확대 효과를 위해 overflow: hidden 필수 설정) */
-.photo-img-wrap { 
-  width: 100%; aspect-ratio: 4/3; border-radius: 4px; background: #f1f2f6; 
-  overflow: hidden; position: relative; 
-}
-
-/* 💡 [기능 1 & 2] 이미지 자동 보정 필터 및 부드러운 확대 세팅 */
-.photo-img-wrap img { 
-  width: 100%; height: 100%; object-fit: cover; display: block; 
-  filter: brightness(1.04) contrast(1.03) saturate(1.06); /* 미세한 화사함/선명도 보정 */
-  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 자연스러운 모션 */
-}
-
-/* 💡 마우스를 올리거나(PC) 터치했을 때(모바일) 액자 안에서 이미지만 확대 */
-.photo-card:hover .photo-img-wrap img {
-  transform: scale(1.08); /* 8% 확대 */
-}
-
+/* 사진 필터 & 부드러운 확대 */
+.photo-img-wrap { width: 100%; aspect-ratio: 4/3; border-radius: 4px; background: #f1f2f6; overflow: hidden; position: relative; }
+.photo-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(1.04) contrast(1.03) saturate(1.06); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.photo-card:hover .photo-img-wrap img { transform: scale(1.08); }
 .photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a4b0be; font-size: 0.9rem; font-weight: 500; background: #f1f2f6; }
 .photo-caption { text-align: center; padding: 12px 4px 0; color: #2f3640; font-size: 1.2rem; font-family: 'Gaegu', sans-serif; }
 
@@ -89,7 +75,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 .btn-warning { background: #f39c12; color: white; box-shadow: 0 4px 12px rgba(243,156,18,0.3); }
 .btn-warning:hover { background: #e67e22; transform: translateY(-2px); }
 
-/* 반응형 스마트 변환 규칙 */
+/* 반응형 */
 @media (max-width: 900px) { .photos-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .photos-grid { grid-template-columns: 1fr; } }
 
@@ -118,7 +104,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <div class="header-board">
   <div class="header-title">📸 복사단 우도순례 사진 콘테스트</div>
-  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.2 시각효과 적용)</div>
+  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.3 참여자수 계산)</div>
 </div>
 
 <div class="progress-wrapper">
@@ -152,6 +138,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   <button class="btn-secondary" onclick="openAdmin()">🛠️ 선생님 관리 패널</button>
 </div>
 
+<!-- 결과창 모달 -->
 <div id="modal-result" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('result')">✕</button>
@@ -160,6 +147,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   </div>
 </div>
 
+<!-- 비밀번호 모달 -->
 <div id="modal-pw" class="modal-overlay">
   <div class="modal-box" style="max-width:360px;">
     <button class="modal-close" onclick="closeModal('pw')">✕</button>
@@ -169,6 +157,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   </div>
 </div>
 
+<!-- 관리자 패널 모달 -->
 <div id="modal-admin" class="modal-overlay">
   <div class="modal-box" style="max-width:500px; text-align:center;">
     <button class="modal-close" onclick="closeModal('admin')">✕</button>
@@ -182,7 +171,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <script>
 // ==========================================
-// 💡 구글 웹 앱 URL 주소를 아래에 꼭 다시 넣어주세요!
+// 💡 선생님께서 주신 구글 웹 앱 주소 탑재 완료!
 // ==========================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-5v2AAYuRMdekIdF3TExGaZhdbJ-IKQphJCHvqKeQpV9iXUhLOoITYiP04wW0JRv6/exec';
 
@@ -225,7 +214,7 @@ async function loadDataFromDB() {
     renderGrids();
   } catch(e) {
     console.error(e);
-    alert('데이터베이스 연결에 실패했습니다. SCRIPT_URL을 확인하거나 새로고침 해주세요.');
+    alert('데이터베이스 연결에 실패했습니다. 새로고침 해주세요.');
     document.getElementById('loading-overlay').style.display = 'none';
   }
 }
@@ -241,14 +230,24 @@ async function saveVotesToDB() {
   }
 }
 
+// 💡 1번 요청: 인원수 계산 방식 변경 (스티커 2개 = 1명)
 function updateProgress() {
-  let total = 0;
-  for (let key in globalVotes) { total += globalVotes[key]; }
+  let totalStickers = 0;
+  for (let key in globalVotes) { totalStickers += globalVotes[key]; }
   
-  document.getElementById('progress-text').innerText = `현재 누적 투표 현황: ${total} / ${MAX_VOTES}표`;
-  let percentage = Math.min(100, (total / MAX_VOTES) * 100);
+  // 스티커 총합 나누기 2 후 올림 처리 (1개만 붙여도 일단 1명으로 카운트)
+  let totalVoters = Math.ceil(totalStickers / 2);
+  
+  // 50명이 다 차면 더 이상 숫자가 넘어가지 않게 고정
+  let displayVoters = Math.min(totalVoters, MAX_VOTES);
+
+  document.getElementById('progress-text').innerText = `현재 투표 참여 현황: ${displayVoters} / ${MAX_VOTES}명`;
+  
+  // 프로그레스 바는 100표(50명 x 2표)를 기준으로 부드럽게 차오르도록 설정
+  let percentage = Math.min(100, (totalStickers / (MAX_VOTES * 2)) * 100);
   document.getElementById('progress-bar-fill').style.width = percentage + '%';
-  return total;
+  
+  return totalStickers; // 투표 완료 여부를 정확히 판단하기 위해 '총 스티커 수'를 반환
 }
 
 function renderGrids() {
@@ -309,13 +308,13 @@ function doVote(pid, emoji, cat) {
   const vk      = pid + '_' + emoji;
   const catName = cat === 'landscape' ? '🌿 풍경사진' : '👧 인물사진'; 
   
-  let currentTotal = updateProgress();
-  if (currentTotal >= MAX_VOTES && !myVotes[vk]) {
-    alert('🎉 이미 목표 투표수가 모두 채워져 콘테스트가 종료되었습니다!');
+  // 💡 투표 종료 기준을 스티커 총합(100표)으로 판단
+  let currentStickers = updateProgress();
+  if (currentStickers >= (MAX_VOTES * 2) && !myVotes[vk]) {
+    alert('🎉 이미 목표 투표 인원(50명)이 모두 채워져 종료되었습니다!');
     openResult(); return;
   }
 
-  // 중복 차단 (1장 제한)
   if (!myVotes[vk]) {
     const alreadyVoted = Object.keys(myVotes).some(k => k.startsWith(cat + '_') && myVotes[k]);
     if (alreadyVoted) {
@@ -336,10 +335,23 @@ function doVote(pid, emoji, cat) {
 
   saveMyVotes(myVotes);
   renderGrids(); 
-  saveVotesToDB(); // 구글 시트로 백그라운드 전송
+  saveVotesToDB(); 
   
-  if (updateProgress() >= MAX_VOTES && !myVotes[vk]) { 
-    setTimeout(() => { alert('🎉 목표 투표수가 완료되었습니다! 최종 결과를 확인해보세요.'); openResult(); }, 300);
+  const hasLandscape = Object.keys(myVotes).some(k => k.startsWith('landscape_'));
+  const hasPortrait = Object.keys(myVotes).some(k => k.startsWith('portrait_'));
+
+  if (hasLandscape && hasPortrait) {
+    setTimeout(() => {
+      alert('🎉 2개의 사진 투표를 모두 완료했습니다!\n참여해 주셔서 감사합니다.\n\n(다음 사람을 위해 화면이 새로고침 됩니다.)');
+      localStorage.removeItem(KEY_MYVOTES); 
+      initShuffle(); 
+      renderGrids(); 
+      document.getElementById('tab-landscape').click(); 
+    }, 600);
+  } else {
+    if (updateProgress() >= (MAX_VOTES * 2) && !myVotes[vk]) { 
+      setTimeout(() => { alert('🎉 50명 투표가 모두 완료되었습니다! 최종 결과를 확인해보세요.'); openResult(); }, 300);
+    }
   }
 }
 
@@ -351,9 +363,10 @@ function switchTab(cat, btn) {
 }
 
 function openResult() {
-  const currentTotal = updateProgress();
-  if (currentTotal < MAX_VOTES) {
-    alert(`🔒 아직 결과 공개 전입니다!\n목표 투표수(${MAX_VOTES}표)가 모두 채워져야 결과를 볼 수 있습니다.\n(현재 참여 현황: ${currentTotal}표)`);
+  const currentStickers = updateProgress();
+  if (currentStickers < (MAX_VOTES * 2)) {
+    let currentVoters = Math.ceil(currentStickers / 2);
+    alert(`🔒 아직 결과 공개 전입니다!\n목표 인원(${MAX_VOTES}명)이 모두 투표를 완료해야 결과를 볼 수 있습니다.\n(현재 참여: ${currentVoters}명)`);
     return;
   }
 
