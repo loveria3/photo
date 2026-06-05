@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 우도순례 사진 콘테스트 v.3.3 (참여 인원 계산)</title>
+<title>📸 우도순례 사진 콘테스트 v.3.4 (사진 초점 최적화)</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -52,7 +52,16 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 /* 사진 필터 & 부드러운 확대 */
 .photo-img-wrap { width: 100%; aspect-ratio: 4/3; border-radius: 4px; background: #f1f2f6; overflow: hidden; position: relative; }
-.photo-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(1.04) contrast(1.03) saturate(1.06); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+
+/* 💡 핵심 변경: object-position을 center 15%로 설정하여 사진 윗부분(얼굴)이 잘리지 않게 함 */
+.photo-img-wrap img { 
+  width: 100%; height: 100%; 
+  object-fit: cover; 
+  object-position: center 15%; 
+  display: block; 
+  filter: brightness(1.04) contrast(1.03) saturate(1.06); 
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+}
 .photo-card:hover .photo-img-wrap img { transform: scale(1.08); }
 .photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a4b0be; font-size: 0.9rem; font-weight: 500; background: #f1f2f6; }
 .photo-caption { text-align: center; padding: 12px 4px 0; color: #2f3640; font-size: 1.2rem; font-family: 'Gaegu', sans-serif; }
@@ -104,7 +113,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <div class="header-board">
   <div class="header-title">📸 복사단 우도순례 사진 콘테스트</div>
-  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.3 참여자수 계산)</div>
+  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.4 사진초점 적용)</div>
 </div>
 
 <div class="progress-wrapper">
@@ -138,7 +147,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   <button class="btn-secondary" onclick="openAdmin()">🛠️ 선생님 관리 패널</button>
 </div>
 
-<!-- 결과창 모달 -->
 <div id="modal-result" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('result')">✕</button>
@@ -147,7 +155,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   </div>
 </div>
 
-<!-- 비밀번호 모달 -->
 <div id="modal-pw" class="modal-overlay">
   <div class="modal-box" style="max-width:360px;">
     <button class="modal-close" onclick="closeModal('pw')">✕</button>
@@ -157,7 +164,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   </div>
 </div>
 
-<!-- 관리자 패널 모달 -->
 <div id="modal-admin" class="modal-overlay">
   <div class="modal-box" style="max-width:500px; text-align:center;">
     <button class="modal-close" onclick="closeModal('admin')">✕</button>
@@ -171,7 +177,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <script>
 // ==========================================
-// 💡 선생님께서 주신 구글 웹 앱 주소 탑재 완료!
+// 💡 선생님께서 주신 구글 웹 앱 주소
 // ==========================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-5v2AAYuRMdekIdF3TExGaZhdbJ-IKQphJCHvqKeQpV9iXUhLOoITYiP04wW0JRv6/exec';
 
@@ -230,24 +236,19 @@ async function saveVotesToDB() {
   }
 }
 
-// 💡 1번 요청: 인원수 계산 방식 변경 (스티커 2개 = 1명)
 function updateProgress() {
   let totalStickers = 0;
   for (let key in globalVotes) { totalStickers += globalVotes[key]; }
   
-  // 스티커 총합 나누기 2 후 올림 처리 (1개만 붙여도 일단 1명으로 카운트)
   let totalVoters = Math.ceil(totalStickers / 2);
-  
-  // 50명이 다 차면 더 이상 숫자가 넘어가지 않게 고정
   let displayVoters = Math.min(totalVoters, MAX_VOTES);
 
   document.getElementById('progress-text').innerText = `현재 투표 참여 현황: ${displayVoters} / ${MAX_VOTES}명`;
   
-  // 프로그레스 바는 100표(50명 x 2표)를 기준으로 부드럽게 차오르도록 설정
   let percentage = Math.min(100, (totalStickers / (MAX_VOTES * 2)) * 100);
   document.getElementById('progress-bar-fill').style.width = percentage + '%';
   
-  return totalStickers; // 투표 완료 여부를 정확히 판단하기 위해 '총 스티커 수'를 반환
+  return totalStickers; 
 }
 
 function renderGrids() {
@@ -308,7 +309,6 @@ function doVote(pid, emoji, cat) {
   const vk      = pid + '_' + emoji;
   const catName = cat === 'landscape' ? '🌿 풍경사진' : '👧 인물사진'; 
   
-  // 💡 투표 종료 기준을 스티커 총합(100표)으로 판단
   let currentStickers = updateProgress();
   if (currentStickers >= (MAX_VOTES * 2) && !myVotes[vk]) {
     alert('🎉 이미 목표 투표 인원(50명)이 모두 채워져 종료되었습니다!');
