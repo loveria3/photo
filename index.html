@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 우도순례 사진 콘테스트 v.3.5 (동적 액자)</title>
+<title>📸 우도순례 사진 콘테스트 v.3.7</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -28,6 +28,19 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 .progress-bar-bg { background: #e0ded9; border-radius: 20px; height: 12px; overflow: hidden; }
 .progress-bar-fill { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); height: 100%; width: 0%; transition: width 0.4s; }
 
+/* 완료 배너 */
+#complete-banner {
+  display: none;
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  color: white;
+  text-align: center;
+  padding: 14px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+#complete-banner.show { display: block; }
+
 /* 탭 버튼 */
 .tabs { display: flex; justify-content: center; gap: 12px; margin: 30px 20px 20px; flex-wrap: wrap; }
 .tab-btn { background: #ffffff; border: 1px solid #dcdcdc; border-radius: 30px; padding: 12px 32px; font-size: 1.1rem; font-weight: 600; color: #7f8c8d; cursor: pointer; transition: all 0.2s; }
@@ -40,23 +53,22 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 .mission-note { text-align: center; font-size: 1.1rem; font-weight: 500; color: #555; line-height: 1.5; margin-bottom: 40px; background: rgba(255,255,255,0.6); padding: 16px; border-radius: 12px; }
 .rule-highlight { display: block; margin-top: 8px; color: #d63031; font-size: 1rem; font-weight: 700; }
 
-/* 📸 3x3 그리드 — align-items:start 로 세로형/가로형 카드 높이 혼재 허용 */
+/* 📸 3x3 그리드 */
 .photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: start; }
-.photo-card { background: #ffffff; padding: 12px 12px 60px; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.06); position: relative; transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; width: 100%; }
+.photo-card { background: #ffffff; padding: 12px 12px 72px; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.06); position: relative; transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; width: 100%; }
 .photo-card:hover { z-index: 10; box-shadow: 0 12px 24px rgba(0,0,0,0.12); }
+
+/* 내가 투표한 카드 강조 */
+.photo-card.my-voted { box-shadow: 0 0 0 3px #00b894, 0 6px 16px rgba(0,0,0,0.06); }
 
 .tape { position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 80px; height: 24px; background: rgba(255, 243, 205, 0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 5; }
 .tape:nth-child(even) { transform: translateX(-50%) rotate(3deg); background: rgba(212, 237, 218, 0.8); }
 .photo-number { position: absolute; top: 18px; left: 18px; background: rgba(0,0,0,0.6); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; z-index: 3; }
 .total-badge { position: absolute; top: 18px; right: 18px; background: #ff6b6b; color: white; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700; z-index: 3; box-shadow: 0 2px 6px rgba(255,107,107,0.4); }
 
-/* ===== 사진 이미지 영역 ===== */
-/* 기본: 가로형 액자 (4:3) */
+/* 사진 이미지 영역 */
 .photo-img-wrap { width: 100%; aspect-ratio: 4/3; border-radius: 4px; background: #f1f2f6; overflow: hidden; position: relative; }
-/* 세로형 사진 감지 시 JS가 자동으로 이 클래스 추가 → 세로형 액자 (3:4) */
 .photo-img-wrap.portrait-frame { aspect-ratio: 3/4; }
-
-/* 가로형: 얼굴이 위쪽에 오도록 center 15% */
 .photo-img-wrap img {
   width: 100%; height: 100%;
   object-fit: cover;
@@ -65,21 +77,36 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   filter: brightness(1.04) contrast(1.03) saturate(1.06);
   transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-/* 세로형: 상단 기준으로 전환 */
-.photo-img-wrap.portrait-frame img {
-  object-position: center top;
-}
+.photo-img-wrap.portrait-frame img { object-position: center top; }
 .photo-card:hover .photo-img-wrap img { transform: scale(1.08); }
 .photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a4b0be; font-size: 0.9rem; font-weight: 500; background: #f1f2f6; }
-.photo-caption { text-align: center; padding: 12px 4px 0; color: #2f3640; font-size: 1.2rem; font-family: 'Gaegu', sans-serif; }
+.photo-caption { text-align: center; padding: 10px 4px 0; color: #2f3640; font-size: 1.1rem; font-family: 'Gaegu', sans-serif; }
 
-/* 스티커 버튼 */
-.sticker-area { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
-.sticker-btn { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 4px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
-.sticker-btn:hover { background: #fff3cd; border-color: #ffe69c; transform: scale(1.1); }
-.sticker-btn.voted { background: #fff3cd; border-color: #ffc107; }
-.sticker-btn .emoji { font-size: 1.1rem; }
-.sticker-btn .cnt { font-size: 0.9rem; font-weight: 700; color: #d63031; }
+/* 카카오/인스타 스타일 스티커 버튼 */
+.sticker-area {
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 6px;
+  padding: 0 6px;
+}
+.sticker-btn {
+  background: #f8f9fa;
+  border: 1.5px solid #e9ecef;
+  border-radius: 20px;
+  padding: 5px 10px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  transition: all 0.2s;
+  min-width: 54px;
+}
+.sticker-btn:hover { background: #fff0f3; border-color: #ffb3c1; transform: scale(1.08); }
+.sticker-btn.voted { background: #fff0f3; border-color: #ff758c; box-shadow: 0 0 0 2px rgba(255,117,140,0.2); }
+.sticker-btn .s-emoji { font-size: 1.35rem; line-height: 1.1; }
+.sticker-btn .s-label { font-size: 0.6rem; font-weight: 700; color: #636e72; letter-spacing: -0.3px; white-space: nowrap; }
+.sticker-btn.voted .s-label { color: #c0392b; }
+.sticker-btn .s-cnt { font-size: 0.75rem; font-weight: 700; color: #d63031; line-height: 1; min-height: 0.9rem; }
 
 /* 하단 버튼 */
 .bottom-area { text-align: center; margin: 50px 20px 20px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
@@ -93,9 +120,14 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 /* 반응형 */
 @media (max-width: 900px) { .photos-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .photos-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .photos-grid { grid-template-columns: 1fr; }
+  .sticker-btn { min-width: 46px; padding: 4px 7px 3px; }
+  .sticker-btn .s-emoji { font-size: 1.2rem; }
+  .sticker-btn .s-label { font-size: 0.55rem; }
+}
 
-/* 모달 및 결과창 */
+/* 모달 */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; overflow-y: auto; padding: 20px; }
 .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
 .modal-box { background: #ffffff; border-radius: 16px; padding: 32px; max-width: 720px; width: 100%; margin: auto; position: relative; }
@@ -120,11 +152,16 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <div class="header-board">
   <div class="header-title">📸 복사단 우도순례 사진 콘테스트</div>
-  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.5 동적 액자 적용)</div>
+  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.7)</div>
+</div>
+
+<!-- 투표 완료 시 상단 배너 (alert 대신 사용) -->
+<div id="complete-banner">
+  ✅ 풍경 + 인물 사진 투표 완료! 참여해 주셔서 감사합니다 💛
 </div>
 
 <div class="progress-wrapper">
-  <div class="progress-text" id="progress-text">현재 투표 참여 현황: 0 / 50명</div>
+  <div class="progress-text" id="progress-text">현재 투표 참여 현황: 0 / 100명</div>
   <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar-fill"></div></div>
 </div>
 
@@ -184,19 +221,23 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <script>
 // ==========================================
-// 💡 선생님께서 주신 구글 웹 앱 주소
+// 구글 웹 앱 주소
 // ==========================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-5v2AAYuRMdekIdF3TExGaZhdbJ-IKQphJCHvqKeQpV9iXUhLOoITYiP04wW0JRv6/exec';
 
 const ADMIN_PW = '070209';
-let MAX_VOTES = 50;
-const STICKERS = ['⭐','💖','🎉','✨'];
+
+// 목표 인원 100명 / 결과 잠금 해제: 총 스티커 200개 (100명 × 2)
+let MAX_VOTES = 100;
+
+// 스티커 3종 (카카오/인스타 반응 스타일)
+const STICKERS = ['❤️', '👍', '⭐'];
+const STICKER_LABELS = { '❤️': '사랑해요', '👍': '좋아요', '⭐': '최고예요' };
 
 const CHILDREN = ['양솔','이건우','박지수','김호현','좌시안','남아영','윤아성','박다온','신지민'];
 const photoSrc = (cat, i) => `photos/${cat}_${i+1}.jpg`;
 
 const KEY_PHOTOS  = 'udoContest_photos';
-const KEY_VOTES   = 'udoContest_votes';
 const KEY_MYVOTES = 'udoContest_myVotes';
 
 let globalVotes = {};
@@ -225,6 +266,9 @@ async function loadDataFromDB() {
     document.getElementById('loading-overlay').style.display = 'none';
     initShuffle();
     renderGrids();
+
+    // 이미 투표 완료한 기기라면 배너 표시
+    checkCompleteBanner();
   } catch(e) {
     console.error(e);
     alert('데이터베이스 연결에 실패했습니다. 새로고침 해주세요.');
@@ -243,11 +287,25 @@ async function saveVotesToDB() {
   }
 }
 
+// 이 기기에서 풍경+인물 둘 다 투표 완료했는지 확인 → 배너 표시
+function checkCompleteBanner() {
+  const myVotes = getMyVotes();
+  const hasL = Object.keys(myVotes).some(k => k.startsWith('landscape_') && myVotes[k]);
+  const hasP = Object.keys(myVotes).some(k => k.startsWith('portrait_')  && myVotes[k]);
+  const banner = document.getElementById('complete-banner');
+  if (hasL && hasP) {
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// 참여 인원 계산: 1인 = 풍경1 + 인물1 = 스티커 2개
 function updateProgress() {
   let totalStickers = 0;
   for (let key in globalVotes) { totalStickers += globalVotes[key]; }
 
-  let totalVoters = Math.ceil(totalStickers / 2);
+  let totalVoters = Math.floor(totalStickers / 2);
   let displayVoters = Math.min(totalVoters, MAX_VOTES);
 
   document.getElementById('progress-text').innerText = `현재 투표 참여 현황: ${displayVoters} / ${MAX_VOTES}명`;
@@ -264,10 +322,7 @@ function renderGrids() {
   updateProgress();
 }
 
-// ==========================================
 // 세로형 사진 감지 → portrait-frame 클래스 적용
-// onload 인라인 핸들러에서 호출 + 캐시된 이미지 대비 renderGrid 후 즉시 검사
-// ==========================================
 function detectOrientation(img) {
   if (img.naturalHeight > img.naturalWidth) {
     img.closest('.photo-img-wrap').classList.add('portrait-frame');
@@ -289,6 +344,9 @@ function renderGrid(cat) {
     let total = 0;
     STICKERS.forEach(e => { total += (globalVotes[pid+'_'+e] || 0); });
 
+    // 내가 이 사진에 투표했는지 확인 (초록 테두리용)
+    const iMyVoted = STICKERS.some(e => !!myVotes[pid+'_'+e]);
+
     let stickersHtml = '';
     STICKERS.forEach(emoji => {
       const vk    = pid + '_' + emoji;
@@ -296,13 +354,15 @@ function renderGrid(cat) {
       const voted = !!myVotes[vk];
       stickersHtml += `
         <button class="sticker-btn ${voted ? 'voted' : ''}" onclick="event.stopPropagation(); doVote('${pid}', '${emoji}', '${cat}')">
-          <span class="emoji">${emoji}</span><span class="cnt">${cnt || ''}</span>
+          <span class="s-emoji">${emoji}</span>
+          <span class="s-label">${STICKER_LABELS[emoji]}</span>
+          <span class="s-cnt">${cnt > 0 ? cnt : ''}</span>
         </button>
       `;
     });
 
     htmlString += `
-      <div class="photo-card" id="card-${pid}">
+      <div class="photo-card${iMyVoted ? ' my-voted' : ''}" id="card-${pid}">
         <div class="tape"></div>
         <div class="photo-number">${i+1}</div>
         ${total > 0 ? `<div class="total-badge">🌟${total}</div>` : ''}
@@ -323,7 +383,7 @@ function renderGrid(cat) {
 
   grid.innerHTML = htmlString;
 
-  // 브라우저 캐시로 인해 onload가 이미 완료된 이미지 즉시 처리
+  // 캐시된 이미지 즉시 방향 감지
   grid.querySelectorAll('.photo-img-wrap img').forEach(img => {
     if (img.complete && img.naturalHeight > 0) detectOrientation(img);
   });
@@ -334,12 +394,14 @@ function doVote(pid, emoji, cat) {
   const vk      = pid + '_' + emoji;
   const catName = cat === 'landscape' ? '🌿 풍경사진' : '👧 인물사진';
 
+  // 목표 인원 마감 체크
   let currentStickers = updateProgress();
   if (currentStickers >= (MAX_VOTES * 2) && !myVotes[vk]) {
-    alert('🎉 이미 목표 투표 인원(50명)이 모두 채워져 종료되었습니다!');
+    alert(`🎉 이미 목표 투표 인원(${MAX_VOTES}명)이 모두 채워져 종료되었습니다!`);
     openResult(); return;
   }
 
+  // 같은 카테고리에 이미 다른 사진 투표 여부 체크
   if (!myVotes[vk]) {
     const alreadyVoted = Object.keys(myVotes).some(k => k.startsWith(cat + '_') && myVotes[k]);
     if (alreadyVoted) {
@@ -348,6 +410,7 @@ function doVote(pid, emoji, cat) {
     }
   }
 
+  // 스티커 토글
   if (myVotes[vk]) {
     globalVotes[vk] = Math.max(0, (globalVotes[vk]||1) - 1);
     delete myVotes[vk];
@@ -355,28 +418,31 @@ function doVote(pid, emoji, cat) {
   } else {
     globalVotes[vk] = (globalVotes[vk]||0) + 1;
     myVotes[vk] = true;
-    showToast(`${catName} 선택 완료! 보드에 기록되었습니다. ${emoji}`);
+    showToast(`${catName} — ${STICKER_LABELS[emoji]}! ${emoji}`);
   }
 
   saveMyVotes(myVotes);
   renderGrids();
   saveVotesToDB();
 
-  const hasLandscape = Object.keys(myVotes).some(k => k.startsWith('landscape_'));
-  const hasPortrait = Object.keys(myVotes).some(k => k.startsWith('portrait_'));
+  // ✅ 풍경 + 인물 둘 다 선택 완료 여부 확인
+  const hasLandscape = Object.keys(myVotes).some(k => k.startsWith('landscape_') && myVotes[k]);
+  const hasPortrait  = Object.keys(myVotes).some(k => k.startsWith('portrait_')  && myVotes[k]);
 
   if (hasLandscape && hasPortrait) {
+    // 개인 기기 모드: myVotes 유지 (재투표 방지), 화면 리셋 없음
+    // alert 대신 상단 배너 표시
+    document.getElementById('complete-banner').classList.add('show');
+    showToast('✅ 투표 완료! 두 카테고리 모두 선택했습니다 💛');
+  }
+
+  // ✅ 목표 달성 체크 — if/else 밖에서 항상 실행 (마지막 투표자도 결과 화면 진입 가능)
+  const newTotal = updateProgress();
+  if (newTotal >= (MAX_VOTES * 2)) {
     setTimeout(() => {
-      alert('🎉 2개의 사진 투표를 모두 완료했습니다!\n참여해 주셔서 감사합니다.\n\n(다음 사람을 위해 화면이 새로고침 됩니다.)');
-      localStorage.removeItem(KEY_MYVOTES);
-      initShuffle();
-      renderGrids();
-      document.getElementById('tab-landscape').click();
-    }, 600);
-  } else {
-    if (updateProgress() >= (MAX_VOTES * 2) && !myVotes[vk]) {
-      setTimeout(() => { alert('🎉 50명 투표가 모두 완료되었습니다! 최종 결과를 확인해보세요.'); openResult(); }, 300);
-    }
+      alert(`🎉 ${MAX_VOTES}명 투표가 모두 완료되었습니다!\n최종 결과를 확인해보세요.`);
+      openResult();
+    }, 500);
   }
 }
 
@@ -390,7 +456,7 @@ function switchTab(cat, btn) {
 function openResult() {
   const currentStickers = updateProgress();
   if (currentStickers < (MAX_VOTES * 2)) {
-    let currentVoters = Math.ceil(currentStickers / 2);
+    let currentVoters = Math.floor(currentStickers / 2);
     alert(`🔒 아직 결과 공개 전입니다!\n목표 인원(${MAX_VOTES}명)이 모두 투표를 완료해야 결과를 볼 수 있습니다.\n(현재 참여: ${currentVoters}명)`);
     return;
   }
@@ -436,6 +502,7 @@ function clearDBVotes() {
   saveVotesToDB();
   initShuffle();
   renderGrids();
+  document.getElementById('complete-banner').classList.remove('show');
   closeModal('admin');
   showToast('서버의 투표 기록이 초기화되었습니다! ✨');
 }
@@ -446,7 +513,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => { el.addEventListener(
 let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 window.onload = loadDataFromDB;
