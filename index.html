@@ -555,14 +555,19 @@ const ADMIN_PW = '복사단2026';
 // 사진 경로: photos/landscape_1.jpg ~ photos/portrait_9.jpg
 const photoSrc = (cat, i) => `photos/${cat}_${i+1}.jpg`;
 
+// 수정된 부분: 누락되었던 스토리지 키 추가
+const KEY_PHOTOS  = 'udoContest_photos';
 const KEY_VOTES   = 'udoContest_votes';
 const KEY_MYVOTES = 'udoContest_myVotes';
 
 // ============================================================
 // localStorage 헬퍼
 // ============================================================
-const getVotes   = () => { try { return JSON.parse(localStorage.getItem(KEY_VOTES))   || {}; } catch { return {}; } };
-const getMyVotes = () => { try { return JSON.parse(localStorage.getItem(KEY_MYVOTES)) || {}; } catch { return {}; } };
+// 수정된 부분: 누락되었던 getPhotos, savePhotos 함수 추가
+const getPhotos   = () => { try { return JSON.parse(localStorage.getItem(KEY_PHOTOS))   || {}; } catch { return {}; } };
+const savePhotos  = d => localStorage.setItem(KEY_PHOTOS,  JSON.stringify(d));
+const getVotes    = () => { try { return JSON.parse(localStorage.getItem(KEY_VOTES))    || {}; } catch { return {}; } };
+const getMyVotes  = () => { try { return JSON.parse(localStorage.getItem(KEY_MYVOTES))  || {}; } catch { return {}; } };
 const saveVotes   = d => localStorage.setItem(KEY_VOTES,   JSON.stringify(d));
 const saveMyVotes = d => localStorage.setItem(KEY_MYVOTES, JSON.stringify(d));
 
@@ -583,7 +588,8 @@ function renderGrid(cat) {
 
   CHILDREN.forEach((name, i) => {
     const pid   = cat + '_' + i;
-    const src   = photos[pid] || null;
+    // 수정된 부분: 업로드된 사진이 없으면 기본 photos 경로의 사진을 불러오도록 연결
+    const src   = photos[pid] || photoSrc(cat, i);
     const pin   = PUSHPINS[i % PUSHPINS.length];
 
     const card = document.createElement('div');
@@ -774,7 +780,10 @@ function buildAdminPanel() {
     cont.innerHTML = '';
     CHILDREN.forEach((name, i) => {
       const pid  = cat + '_' + i;
-      const src  = photos[pid] || null;
+      const uploadedSrc = photos[pid] || null;
+      // 수정된 부분: 관리자 패널에서도 기본 폴더 사진 썸네일이 보이도록 처리
+      const displaySrc = uploadedSrc || photoSrc(cat, i); 
+      
       const catLabel = cat === 'landscape' ? '🌿 풍경' : '👧 인물';
       const catCls   = cat === 'landscape' ? 'cat-l' : 'cat-p';
       const div = document.createElement('div');
@@ -782,14 +791,14 @@ function buildAdminPanel() {
       div.innerHTML = `
         <div class="slot-name">${name}</div>
         <span class="slot-cat ${catCls}">${catLabel}</span>
-        ${src
-          ? `<img class="thumb" src="${src}" alt="${name}">`
+        ${displaySrc
+          ? `<img class="thumb" src="${displaySrc}" alt="${name}">`
           : `<div style="font-size:2.2rem;margin:8px 0;color:#ccc;">📷</div>`}
         <label>
-          ${src ? '🔄 변경' : '📂 업로드'}
+          ${uploadedSrc ? '🔄 다른 사진 업로드' : '📂 기본사진 (새로 업로드)'}
           <input type="file" accept="image/*" onchange="uploadPhoto(this,'${pid}')">
         </label>
-        ${src ? `<button class="remove-btn" onclick="removePhoto('${pid}')">🗑 삭제</button>` : ''}
+        ${uploadedSrc ? `<button class="remove-btn" onclick="removePhoto('${pid}')">🗑 직접 올린 사진 삭제</button>` : ''}
       `;
       cont.appendChild(div);
     });
@@ -812,7 +821,7 @@ function uploadPhoto(input, pid) {
 }
 
 function removePhoto(pid) {
-  if (!confirm('이 사진을 삭제할까요?')) return;
+  if (!confirm('직접 업로드한 사진을 삭제하고, 기본사진으로 되돌릴까요?')) return;
   const photos = getPhotos();
   delete photos[pid];
   savePhotos(photos);
