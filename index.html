@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 우도순례 사진 콘테스트 v.3.1 (누적 보드형)</title>
+<title>📸 우도순례 사진 콘테스트 v.3.2 (시각 효과 업그레이드)</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -40,16 +40,34 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 .mission-note { text-align: center; font-size: 1.1rem; font-weight: 500; color: #555; line-height: 1.5; margin-bottom: 40px; background: rgba(255,255,255,0.6); padding: 16px; border-radius: 12px; }
 .rule-highlight { display: block; margin-top: 8px; color: #d63031; font-size: 1rem; font-weight: 700; }
 
-/* 📸 3x3 그리드 */
+/* 📸 3x3 그리드 배열 */
 .photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 .photo-card { background: #ffffff; padding: 12px 12px 60px; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.06); position: relative; transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; width: 100%; }
-.photo-card:hover { transform: translateY(-8px); z-index: 10; box-shadow: 0 12px 24px rgba(0,0,0,0.12); }
+.photo-card:hover { z-index: 10; box-shadow: 0 12px 24px rgba(0,0,0,0.12); }
+
 .tape { position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 80px; height: 24px; background: rgba(255, 243, 205, 0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 5; }
 .tape:nth-child(even) { transform: translateX(-50%) rotate(3deg); background: rgba(212, 237, 218, 0.8); }
 .photo-number { position: absolute; top: 18px; left: 18px; background: rgba(0,0,0,0.6); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; z-index: 3; }
 .total-badge { position: absolute; top: 18px; right: 18px; background: #ff6b6b; color: white; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700; z-index: 3; box-shadow: 0 2px 6px rgba(255,107,107,0.4); }
-.photo-img-wrap { width: 100%; aspect-ratio: 4/3; border-radius: 4px; background: #f1f2f6; overflow: hidden; }
-.photo-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 사진 프레임 영역 (확대 효과를 위해 overflow: hidden 필수 설정) */
+.photo-img-wrap { 
+  width: 100%; aspect-ratio: 4/3; border-radius: 4px; background: #f1f2f6; 
+  overflow: hidden; position: relative; 
+}
+
+/* 💡 [기능 1 & 2] 이미지 자동 보정 필터 및 부드러운 확대 세팅 */
+.photo-img-wrap img { 
+  width: 100%; height: 100%; object-fit: cover; display: block; 
+  filter: brightness(1.04) contrast(1.03) saturate(1.06); /* 미세한 화사함/선명도 보정 */
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 자연스러운 모션 */
+}
+
+/* 💡 마우스를 올리거나(PC) 터치했을 때(모바일) 액자 안에서 이미지만 확대 */
+.photo-card:hover .photo-img-wrap img {
+  transform: scale(1.08); /* 8% 확대 */
+}
+
 .photo-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a4b0be; font-size: 0.9rem; font-weight: 500; background: #f1f2f6; }
 .photo-caption { text-align: center; padding: 12px 4px 0; color: #2f3640; font-size: 1.2rem; font-family: 'Gaegu', sans-serif; }
 
@@ -71,25 +89,22 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 .btn-warning { background: #f39c12; color: white; box-shadow: 0 4px 12px rgba(243,156,18,0.3); }
 .btn-warning:hover { background: #e67e22; transform: translateY(-2px); }
 
-/* 반응형 */
+/* 반응형 스마트 변환 규칙 */
 @media (max-width: 900px) { .photos-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .photos-grid { grid-template-columns: 1fr; } }
 
-/* 모달 */
+/* 모달 및 결과창 */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; overflow-y: auto; padding: 20px; }
 .modal-overlay.open { display: flex; align-items: flex-start; justify-content: center; }
 .modal-box { background: #ffffff; border-radius: 16px; padding: 32px; max-width: 720px; width: 100%; margin: auto; position: relative; }
 .modal-box h2 { font-size: 1.6rem; color: #2c3e50; text-align: center; margin-bottom: 24px; }
 .modal-close { position: absolute; top: 16px; right: 20px; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #a4b0be; }
-
-/* 결과창 */
 .result-list { list-style: none; margin-bottom: 20px; }
 .result-list li { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; background: #f8f9fa; border: 1px solid #e9ecef; font-weight: 600; }
 .result-list li:nth-child(1) { background: #fff9e6; border-color: #ffeaa7; }
 .result-list li:nth-child(2) { background: #f1f2f6; border-color: #dfe4ea; }
 .result-list li:nth-child(3) { background: #fff3e0; border-color: #ffe0b2; }
 
-/* 토스트 */
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: #2d3436; color: white; padding: 12px 32px; border-radius: 30px; font-size: 1.05rem; transition: transform 0.3s; z-index: 300; pointer-events: none; }
 .toast.show { transform: translateX(-50%) translateY(0); }
 </style>
@@ -103,7 +118,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <div class="header-board">
   <div class="header-title">📸 복사단 우도순례 사진 콘테스트</div>
-  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.1 누적 보드형)</div>
+  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.2 시각효과 적용)</div>
 </div>
 
 <div class="progress-wrapper">
@@ -167,9 +182,9 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <script>
 // ==========================================
-// 💡 구글 웹 앱 URL 주소를 아래에 꼭 넣어주세요!
+// 💡 구글 웹 앱 URL 주소를 아래에 꼭 다시 넣어주세요!
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-5v2AAYuRMdekIdF3TExGaZhdbJ-IKQphJCHvqKeQpV9iXUhLOoITYiP04wW0JRv6/exec';
+const SCRIPT_URL = '여기에_웹앱_URL을_붙여넣으세요';
 
 const ADMIN_PW = '070209'; 
 let MAX_VOTES = 50;        
@@ -309,7 +324,6 @@ function doVote(pid, emoji, cat) {
     }
   }
 
-  // 💡 수정된 부분: 자동 화면 리셋 코드를 모두 빼고, 내 스티커가 고정 유지되도록 세팅
   if (myVotes[vk]) {
     globalVotes[vk] = Math.max(0, (globalVotes[vk]||1) - 1);
     delete myVotes[vk];
