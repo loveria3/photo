@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 우도순례 사진 콘테스트 v.3.0 (실시간 연동)</title>
+<title>📸 우도순례 사진 콘테스트 v.3.1 (누적 보드형)</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -96,7 +96,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 </head>
 <body>
 
-<!-- 서버 연결 로딩 창 -->
 <div id="loading-overlay">
   <div class="spinner"></div>
   <div style="font-size: 1.2rem; font-weight: 700; color: #2c3e50;">서버에서 데이터를 불러오는 중입니다... ⏳</div>
@@ -104,7 +103,7 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <div class="header-board">
   <div class="header-title">📸 복사단 우도순례 사진 콘테스트</div>
-  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.0 DB연동)</div>
+  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.1 누적 보드형)</div>
 </div>
 
 <div class="progress-wrapper">
@@ -138,7 +137,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   <button class="btn-secondary" onclick="openAdmin()">🛠️ 선생님 관리 패널</button>
 </div>
 
-<!-- 결과창 모달 -->
 <div id="modal-result" class="modal-overlay">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal('result')">✕</button>
@@ -147,7 +145,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   </div>
 </div>
 
-<!-- 비밀번호 모달 -->
 <div id="modal-pw" class="modal-overlay">
   <div class="modal-box" style="max-width:360px;">
     <button class="modal-close" onclick="closeModal('pw')">✕</button>
@@ -157,7 +154,6 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
   </div>
 </div>
 
-<!-- 관리자 패널 모달 (사진 업로드 제거됨) -->
 <div id="modal-admin" class="modal-overlay">
   <div class="modal-box" style="max-width:500px; text-align:center;">
     <button class="modal-close" onclick="closeModal('admin')">✕</button>
@@ -171,10 +167,9 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <script>
 // ==========================================
-// 💡 설정 (이 부분 수정 필수!)
+// 💡 구글 웹 앱 URL 주소를 아래에 꼭 넣어주세요!
 // ==========================================
-// ⭐️ 1단계에서 복사한 구글 앱스 스크립트 웹 앱 URL을 아래에 따옴표 사이에 꼭 붙여넣으세요!
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-5v2AAYuRMdekIdF3TExGaZhdbJ-IKQphJCHvqKeQpV9iXUhLOoITYiP04wW0JRv6/exec';
+const SCRIPT_URL = '여기에_웹앱_URL을_붙여넣으세요';
 
 const ADMIN_PW = '070209'; 
 let MAX_VOTES = 50;        
@@ -183,16 +178,18 @@ const STICKERS = ['⭐','💖','🎉','✨'];
 const CHILDREN = ['양솔','이건우','박지수','김호현','좌시안','남아영','윤아성','박다온','신지민'];
 const photoSrc = (cat, i) => `photos/${cat}_${i+1}.jpg`;
 
-// 💡 전역 변수 (구글 시트에서 가져온 전체 투표 데이터)
-let globalVotes = {}; 
-const KEY_MYVOTES = 'udoContest_myVotes'; // 내 기기의 투표 상태 (중복 방지용)
+const KEY_PHOTOS  = 'udoContest_photos';
+const KEY_VOTES   = 'udoContest_votes';
+const KEY_MYVOTES = 'udoContest_myVotes';
 
-// 내 투표 기록 불러오기/저장
+let globalVotes = {}; 
+
+const getPhotos   = () => { try { return JSON.parse(localStorage.getItem(KEY_PHOTOS))   || {}; } catch { return {}; } };
 const getMyVotes  = () => { try { return JSON.parse(localStorage.getItem(KEY_MYVOTES))  || {}; } catch { return {}; } };
 const saveMyVotes = d => localStorage.setItem(KEY_MYVOTES, JSON.stringify(d));
 
-// 랜덤 섞기 배열
 let shuffledIndices = { landscape: [], portrait: [] };
+
 function initShuffle() {
   let arrL = CHILDREN.map((_, i) => i);
   let arrP = CHILDREN.map((_, i) => i);
@@ -202,14 +199,13 @@ function initShuffle() {
   shuffledIndices.portrait = arrP;
 }
 
-// 💡 DB에서 데이터 불러오기
 async function loadDataFromDB() {
   try {
     const res = await fetch(SCRIPT_URL);
     const textData = await res.text();
     globalVotes = textData && textData.trim() !== "" ? JSON.parse(textData) : {};
     
-    document.getElementById('loading-overlay').style.display = 'none'; // 로딩 끝
+    document.getElementById('loading-overlay').style.display = 'none'; 
     initShuffle();
     renderGrids();
   } catch(e) {
@@ -219,7 +215,6 @@ async function loadDataFromDB() {
   }
 }
 
-// 💡 DB에 투표 결과 저장하기
 async function saveVotesToDB() {
   try {
     await fetch(SCRIPT_URL, {
@@ -249,6 +244,7 @@ function renderGrids() {
 
 function renderGrid(cat) {
   const grid = document.getElementById('grid-' + cat);
+  const photos  = getPhotos();
   const myVotes = getMyVotes();
   let htmlString = '';
 
@@ -256,7 +252,7 @@ function renderGrid(cat) {
 
   order.forEach((i) => {
     const pid = cat + '_' + i;
-    const src = photoSrc(cat, i);
+    const src = photos[pid] || photoSrc(cat, i);
 
     let total = 0;
     STICKERS.forEach(e => { total += (globalVotes[pid+'_'+e] || 0); });
@@ -278,6 +274,7 @@ function renderGrid(cat) {
         <div class="tape"></div>
         <div class="photo-number">${i+1}</div>
         ${total > 0 ? `<div class="total-badge">🌟${total}</div>` : ''}
+        
         <div class="photo-img-wrap">
           <img src="${src}" alt="사진" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="photo-placeholder" style="display:none;">
@@ -299,11 +296,11 @@ function doVote(pid, emoji, cat) {
   
   let currentTotal = updateProgress();
   if (currentTotal >= MAX_VOTES && !myVotes[vk]) {
-    alert('🎉 이미 목표 투표수가 모두 채워져 종료되었습니다!');
+    alert('🎉 이미 목표 투표수가 모두 채워져 콘테스트가 종료되었습니다!');
     openResult(); return;
   }
 
-  // 중복 차단
+  // 중복 차단 (1장 제한)
   if (!myVotes[vk]) {
     const alreadyVoted = Object.keys(myVotes).some(k => k.startsWith(cat + '_') && myVotes[k]);
     if (alreadyVoted) {
@@ -312,6 +309,7 @@ function doVote(pid, emoji, cat) {
     }
   }
 
+  // 💡 수정된 부분: 자동 화면 리셋 코드를 모두 빼고, 내 스티커가 고정 유지되도록 세팅
   if (myVotes[vk]) {
     globalVotes[vk] = Math.max(0, (globalVotes[vk]||1) - 1);
     delete myVotes[vk];
@@ -319,29 +317,15 @@ function doVote(pid, emoji, cat) {
   } else {
     globalVotes[vk] = (globalVotes[vk]||0) + 1;
     myVotes[vk] = true;
-    showToast(`${catName} 투표가 서버에 저장되었습니다! ${emoji}`); 
+    showToast(`${catName} 선택 완료! 보드에 기록되었습니다. ${emoji}`); 
   }
 
   saveMyVotes(myVotes);
   renderGrids(); 
   saveVotesToDB(); // 구글 시트로 백그라운드 전송
   
-  // 💡 자동 완료 로직
-  const hasLandscape = Object.keys(myVotes).some(k => k.startsWith('landscape_'));
-  const hasPortrait = Object.keys(myVotes).some(k => k.startsWith('portrait_'));
-
-  if (hasLandscape && hasPortrait) {
-    setTimeout(() => {
-      alert('🎉 2개의 사진 투표를 모두 완료했습니다!\n참여해 주셔서 감사합니다.\n\n(다음 사람을 위해 화면이 새로고침 됩니다.)');
-      localStorage.removeItem(KEY_MYVOTES); 
-      initShuffle(); 
-      renderGrids(); 
-      document.getElementById('tab-landscape').click(); 
-    }, 600);
-  } else {
-    if (updateProgress() >= MAX_VOTES && !myVotes[vk]) { 
-      setTimeout(() => { alert('🎉 전체 목표 투표수가 완료되었습니다!'); openResult(); }, 300);
-    }
+  if (updateProgress() >= MAX_VOTES && !myVotes[vk]) { 
+    setTimeout(() => { alert('🎉 목표 투표수가 완료되었습니다! 최종 결과를 확인해보세요.'); openResult(); }, 300);
   }
 }
 
@@ -355,11 +339,12 @@ function switchTab(cat, btn) {
 function openResult() {
   const currentTotal = updateProgress();
   if (currentTotal < MAX_VOTES) {
-    alert(`🔒 아직 결과 공개 전입니다!\n목표 득표수(${MAX_VOTES}표)가 모두 채워져야 결과를 볼 수 있습니다.\n(현재 누적: ${currentTotal}표)`);
+    alert(`🔒 아직 결과 공개 전입니다!\n목표 투표수(${MAX_VOTES}표)가 모두 채워져야 결과를 볼 수 있습니다.\n(현재 참여 현황: ${currentTotal}표)`);
     return;
   }
 
-  function score(cat, i) { return STICKERS.reduce((s, e) => s + (globalVotes[cat+'_'+i+'_'+e]||0), 0); }
+  const votes = globalVotes;
+  function score(cat, i) { return STICKERS.reduce((s, e) => s + (votes[cat+'_'+i+'_'+e]||0), 0); }
   function buildRank(cat) { return CHILDREN.map((name,i) => ({name, i, s: score(cat,i)})).sort((a,b) => b.s - a.s); }
 
   const medals = ['🥇 1등','🥈 2등','🥉 3등','4등','5등','6등','7등','8등','9등'];
@@ -394,9 +379,9 @@ function checkPw() {
 
 function clearDBVotes() {
   if (!confirm('경고: 구글 서버에 누적된 모든 투표 데이터를 0으로 초기화할까요?')) return;
-  globalVotes = {}; // 데이터 리셋
-  localStorage.removeItem(KEY_MYVOTES); // 기기 리셋
-  saveVotesToDB(); // 서버 덮어쓰기
+  globalVotes = {}; 
+  localStorage.removeItem(KEY_MYVOTES); 
+  saveVotesToDB(); 
   initShuffle();
   renderGrids();
   closeModal('admin');
@@ -412,9 +397,7 @@ function showToast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// 💡 프로그램 시작점 (페이지 로드 시 DB 연결)
 window.onload = loadDataFromDB;
-
 </script>
 </body>
 </html>
