@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📸 우도순례 사진 콘테스트 v.3.7</title>
+<title>📸 우도순례 사진 콘테스트 v.3.8</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -61,8 +61,11 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 /* 내가 투표한 카드 강조 */
 .photo-card.my-voted { box-shadow: 0 0 0 3px #00b894, 0 6px 16px rgba(0,0,0,0.06); }
 
+/* ✅ FIX: .tape:nth-child(even) → .photo-card:nth-child(even) .tape 로 수정
+   이전 선택자는 tape가 항상 카드의 첫 번째 자식이라 even이 적용된 적 없었음 */
 .tape { position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 80px; height: 24px; background: rgba(255, 243, 205, 0.8); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 5; }
-.tape:nth-child(even) { transform: translateX(-50%) rotate(3deg); background: rgba(212, 237, 218, 0.8); }
+.photo-card:nth-child(even) .tape { transform: translateX(-50%) rotate(3deg); background: rgba(212, 237, 218, 0.8); }
+
 .photo-number { position: absolute; top: 18px; left: 18px; background: rgba(0,0,0,0.6); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; z-index: 3; }
 .total-badge { position: absolute; top: 18px; right: 18px; background: #ff6b6b; color: white; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700; z-index: 3; box-shadow: 0 2px 6px rgba(255,107,107,0.4); }
 
@@ -141,6 +144,32 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: #2d3436; color: white; padding: 12px 32px; border-radius: 30px; font-size: 1.05rem; transition: transform 0.3s; z-index: 300; pointer-events: none; }
 .toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== 인물사진 보호 ===== */
+/* 이미지 자체: 길게 누르기 저장 / 드래그 / 우클릭 차단 */
+#section-portrait .photo-img-wrap {
+  -webkit-touch-callout: none;
+  touch-action: pan-x pan-y; /* 핀치 줌 차단, 스크롤은 허용 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+#section-portrait .photo-img-wrap img {
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none; /* 이미지 직접 터치 이벤트 차단 */
+}
+/* 투명 보호 오버레이: 이미지 위를 덮어 길게 누르기 막음 */
+.portrait-protect {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* 스티커 버튼은 오버레이 위에 표시 */
+#section-portrait .sticker-area { z-index: 3; }
 </style>
 </head>
 <body>
@@ -152,10 +181,9 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 
 <div class="header-board">
   <div class="header-title">📸 복사단 우도순례 사진 콘테스트</div>
-  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.7)</div>
+  <div class="header-sub">복사자모회 · 2026년 우도 성지순례 ✨ (v.3.8)</div>
 </div>
 
-<!-- 투표 완료 시 상단 배너 (alert 대신 사용) -->
 <div id="complete-banner">
   ✅ 풍경 + 인물 사진 투표 완료! 참여해 주셔서 감사합니다 💛
 </div>
@@ -209,28 +237,46 @@ body { background-color: #F7F5F0; color: #333; font-family: 'Pretendard', sans-s
 </div>
 
 <div id="modal-admin" class="modal-overlay">
-  <div class="modal-box" style="max-width:500px; text-align:center;">
+  <div class="modal-box" style="max-width:500px;">
     <button class="modal-close" onclick="closeModal('admin')">✕</button>
     <h2>🛠️ 투표 관리 패널</h2>
-    <p style="margin-bottom:20px; color:#555;">(서버 연동 모드에서는 사진 파일은 로컬 폴더를 사용합니다.)</p>
-    <button class="btn-warning" style="width:100%; padding:14px; font-size:1.1rem; background:#e74c3c; border-radius:10px;" onclick="clearDBVotes()">⚠️ 서버의 모든 투표 기록 초기화</button>
+
+    <!-- 목표 인원 설정 -->
+    <div style="background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:20px; margin-bottom:16px;">
+      <div style="font-size:1rem; font-weight:700; color:#2c3e50; margin-bottom:6px;">👥 목표 참여 인원 설정</div>
+      <div style="font-size:0.83rem; color:#888; margin-bottom:14px;">이 인원이 모두 투표해야 결과를 볼 수 있습니다.</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <input type="number" id="max-votes-input" min="1" max="9999"
+               style="flex:1; padding:10px 14px; border:1.5px solid #dcdcdc; border-radius:8px; font-size:1.1rem; font-weight:700; text-align:center; color:#2c3e50;"
+               placeholder="인원 입력">
+        <span style="font-size:1rem; color:#636e72; white-space:nowrap;">명</span>
+        <button onclick="applyMaxVotes()"
+                style="background:#2c3e50; color:white; border:none; border-radius:8px; padding:10px 20px; font-size:1rem; font-weight:700; cursor:pointer; white-space:nowrap;">
+          저장
+        </button>
+      </div>
+      <div id="max-votes-current" style="margin-top:10px; font-size:0.85rem; color:#888; text-align:center;"></div>
+    </div>
+
+    <!-- 투표 초기화 -->
+    <div style="text-align:center;">
+      <p style="margin-bottom:12px; font-size:0.83rem; color:#888;">(서버 연동 모드에서는 사진 파일은 로컬 폴더를 사용합니다.)</p>
+      <button class="btn-warning" style="width:100%; padding:14px; font-size:1.1rem; background:#e74c3c; border-radius:10px;" onclick="clearDBVotes()">⚠️ 서버의 모든 투표 기록 초기화</button>
+    </div>
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
-// ==========================================
-// 구글 웹 앱 주소
-// ==========================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-5v2AAYuRMdekIdF3TExGaZhdbJ-IKQphJCHvqKeQpV9iXUhLOoITYiP04wW0JRv6/exec';
 
 const ADMIN_PW = '070209';
 
-// 목표 인원 100명 / 결과 잠금 해제: 총 스티커 200개 (100명 × 2)
-let MAX_VOTES = 100;
+const KEY_MAX_VOTES = 'udoContest_maxVotes';
+// localStorage에 저장된 값이 있으면 불러옴, 없으면 기본값 100
+let MAX_VOTES = parseInt(localStorage.getItem(KEY_MAX_VOTES)) || 100;
 
-// 스티커 3종 (카카오/인스타 반응 스타일)
 const STICKERS = ['❤️', '👍', '⭐'];
 const STICKER_LABELS = { '❤️': '사랑해요', '👍': '좋아요', '⭐': '최고예요' };
 
@@ -242,8 +288,8 @@ const KEY_MYVOTES = 'udoContest_myVotes';
 
 let globalVotes = {};
 
-const getPhotos   = () => { try { return JSON.parse(localStorage.getItem(KEY_PHOTOS))   || {}; } catch { return {}; } };
-const getMyVotes  = () => { try { return JSON.parse(localStorage.getItem(KEY_MYVOTES))  || {}; } catch { return {}; } };
+const getPhotos  = () => { try { return JSON.parse(localStorage.getItem(KEY_PHOTOS))  || {}; } catch { return {}; } };
+const getMyVotes = () => { try { return JSON.parse(localStorage.getItem(KEY_MYVOTES)) || {}; } catch { return {}; } };
 const saveMyVotes = d => localStorage.setItem(KEY_MYVOTES, JSON.stringify(d));
 
 let shuffledIndices = { landscape: [], portrait: [] };
@@ -266,8 +312,6 @@ async function loadDataFromDB() {
     document.getElementById('loading-overlay').style.display = 'none';
     initShuffle();
     renderGrids();
-
-    // 이미 투표 완료한 기기라면 배너 표시
     checkCompleteBanner();
   } catch(e) {
     console.error(e);
@@ -278,40 +322,25 @@ async function loadDataFromDB() {
 
 async function saveVotesToDB() {
   try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(globalVotes)
-    });
-  } catch(e) {
-    console.error("DB 저장 실패", e);
-  }
+    await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(globalVotes) });
+  } catch(e) { console.error("DB 저장 실패", e); }
 }
 
-// 이 기기에서 풍경+인물 둘 다 투표 완료했는지 확인 → 배너 표시
+// ✅ FIX 1: 배너 show/hide 통합 관리 — doVote 끝에서도 호출
 function checkCompleteBanner() {
   const myVotes = getMyVotes();
   const hasL = Object.keys(myVotes).some(k => k.startsWith('landscape_') && myVotes[k]);
   const hasP = Object.keys(myVotes).some(k => k.startsWith('portrait_')  && myVotes[k]);
-  const banner = document.getElementById('complete-banner');
-  if (hasL && hasP) {
-    banner.classList.add('show');
-  } else {
-    banner.classList.remove('show');
-  }
+  document.getElementById('complete-banner').classList.toggle('show', hasL && hasP);
 }
 
-// 참여 인원 계산: 1인 = 풍경1 + 인물1 = 스티커 2개
 function updateProgress() {
   let totalStickers = 0;
   for (let key in globalVotes) { totalStickers += globalVotes[key]; }
 
-  let totalVoters = Math.floor(totalStickers / 2);
-  let displayVoters = Math.min(totalVoters, MAX_VOTES);
-
+  let displayVoters = Math.min(Math.floor(totalStickers / 2), MAX_VOTES);
   document.getElementById('progress-text').innerText = `현재 투표 참여 현황: ${displayVoters} / ${MAX_VOTES}명`;
-
-  let percentage = Math.min(100, (totalStickers / (MAX_VOTES * 2)) * 100);
-  document.getElementById('progress-bar-fill').style.width = percentage + '%';
+  document.getElementById('progress-bar-fill').style.width = Math.min(100, (totalStickers / (MAX_VOTES * 2)) * 100) + '%';
 
   return totalStickers;
 }
@@ -322,7 +351,6 @@ function renderGrids() {
   updateProgress();
 }
 
-// 세로형 사진 감지 → portrait-frame 클래스 적용
 function detectOrientation(img) {
   if (img.naturalHeight > img.naturalWidth) {
     img.closest('.photo-img-wrap').classList.add('portrait-frame');
@@ -335,30 +363,24 @@ function renderGrid(cat) {
   const myVotes = getMyVotes();
   let htmlString = '';
 
-  const order = shuffledIndices[cat];
-
-  order.forEach((i) => {
+  shuffledIndices[cat].forEach((i) => {
     const pid = cat + '_' + i;
     const src = photos[pid] || photoSrc(cat, i);
 
     let total = 0;
     STICKERS.forEach(e => { total += (globalVotes[pid+'_'+e] || 0); });
-
-    // 내가 이 사진에 투표했는지 확인 (초록 테두리용)
     const iMyVoted = STICKERS.some(e => !!myVotes[pid+'_'+e]);
 
     let stickersHtml = '';
     STICKERS.forEach(emoji => {
-      const vk    = pid + '_' + emoji;
-      const cnt   = globalVotes[vk] || 0;
-      const voted = !!myVotes[vk];
+      const vk  = pid + '_' + emoji;
+      const cnt = globalVotes[vk] || 0;
       stickersHtml += `
-        <button class="sticker-btn ${voted ? 'voted' : ''}" onclick="event.stopPropagation(); doVote('${pid}', '${emoji}', '${cat}')">
+        <button class="sticker-btn ${myVotes[vk] ? 'voted' : ''}" onclick="event.stopPropagation(); doVote('${pid}', '${emoji}', '${cat}')">
           <span class="s-emoji">${emoji}</span>
           <span class="s-label">${STICKER_LABELS[emoji]}</span>
           <span class="s-cnt">${cnt > 0 ? cnt : ''}</span>
-        </button>
-      `;
+        </button>`;
     });
 
     htmlString += `
@@ -366,24 +388,22 @@ function renderGrid(cat) {
         <div class="tape"></div>
         <div class="photo-number">${i+1}</div>
         ${total > 0 ? `<div class="total-badge">🌟${total}</div>` : ''}
-
-        <div class="photo-img-wrap">
+        <div class="photo-img-wrap"${cat === 'portrait' ? ' oncontextmenu="return false"' : ''}>
           <img src="${src}" alt="사진"
                onload="detectOrientation(this)"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+               ${cat === 'portrait' ? 'draggable="false" oncontextmenu="return false"' : ''}>
           <div class="photo-placeholder" style="display:none;">
             <span class="ph-icon">📷</span><span>사진 준비중</span>
           </div>
+          ${cat === 'portrait' ? '<div class="portrait-protect" oncontextmenu="return false"></div>' : ''}
         </div>
         <div class="photo-caption">No.${i+1}</div>
         <div class="sticker-area">${stickersHtml}</div>
-      </div>
-    `;
+      </div>`;
   });
 
   grid.innerHTML = htmlString;
-
-  // 캐시된 이미지 즉시 방향 감지
   grid.querySelectorAll('.photo-img-wrap img').forEach(img => {
     if (img.complete && img.naturalHeight > 0) detectOrientation(img);
   });
@@ -394,14 +414,14 @@ function doVote(pid, emoji, cat) {
   const vk      = pid + '_' + emoji;
   const catName = cat === 'landscape' ? '🌿 풍경사진' : '👧 인물사진';
 
-  // 목표 인원 마감 체크
+  // 목표 마감 체크
   let currentStickers = updateProgress();
   if (currentStickers >= (MAX_VOTES * 2) && !myVotes[vk]) {
     alert(`🎉 이미 목표 투표 인원(${MAX_VOTES}명)이 모두 채워져 종료되었습니다!`);
     openResult(); return;
   }
 
-  // 같은 카테고리에 이미 다른 사진 투표 여부 체크
+  // 같은 카테고리 다른 사진 중복 투표 차단
   if (!myVotes[vk]) {
     const alreadyVoted = Object.keys(myVotes).some(k => k.startsWith(cat + '_') && myVotes[k]);
     if (alreadyVoted) {
@@ -410,33 +430,42 @@ function doVote(pid, emoji, cat) {
     }
   }
 
-  // 스티커 토글
-  if (myVotes[vk]) {
+  // 스티커 토글 — 추가/취소 여부 기록
+  const isRemoving = !!myVotes[vk];
+  if (isRemoving) {
     globalVotes[vk] = Math.max(0, (globalVotes[vk]||1) - 1);
     delete myVotes[vk];
-    showToast('스티커를 취소했습니다 🙂');
   } else {
     globalVotes[vk] = (globalVotes[vk]||0) + 1;
     myVotes[vk] = true;
-    showToast(`${catName} — ${STICKER_LABELS[emoji]}! ${emoji}`);
   }
 
   saveMyVotes(myVotes);
   renderGrids();
   saveVotesToDB();
 
-  // ✅ 풍경 + 인물 둘 다 선택 완료 여부 확인
-  const hasLandscape = Object.keys(myVotes).some(k => k.startsWith('landscape_') && myVotes[k]);
-  const hasPortrait  = Object.keys(myVotes).some(k => k.startsWith('portrait_')  && myVotes[k]);
+  // ✅ FIX 2: 상태에 따른 토스트 + 탭 유도 메시지
+  const hasL = Object.keys(myVotes).some(k => k.startsWith('landscape_') && myVotes[k]);
+  const hasP = Object.keys(myVotes).some(k => k.startsWith('portrait_')  && myVotes[k]);
 
-  if (hasLandscape && hasPortrait) {
-    // 개인 기기 모드: myVotes 유지 (재투표 방지), 화면 리셋 없음
-    // alert 대신 상단 배너 표시
-    document.getElementById('complete-banner').classList.add('show');
-    showToast('✅ 투표 완료! 두 카테고리 모두 선택했습니다 💛');
+  if (isRemoving) {
+    showToast('스티커를 취소했습니다 🙂');
+  } else if (hasL && hasP) {
+    showToast('✅ 풍경 + 인물 투표 완료! 감사합니다 💛');
+  } else if (hasL && !hasP) {
+    // ✅ FIX 3: 풍경만 완료 → 인물탭 유도
+    showToast('🌿 풍경 선택 완료! 👧 인물사진 탭도 선택해주세요');
+  } else if (!hasL && hasP) {
+    // ✅ FIX 3: 인물만 완료 → 풍경탭 유도
+    showToast('👧 인물 선택 완료! 🌿 풍경사진 탭도 선택해주세요');
+  } else {
+    showToast(`${catName} — ${STICKER_LABELS[emoji]}! ${emoji}`);
   }
 
-  // ✅ 목표 달성 체크 — if/else 밖에서 항상 실행 (마지막 투표자도 결과 화면 진입 가능)
+  // ✅ FIX 1: 배너 show/hide 를 통합 함수로 처리 (취소 시 배너 숨김 포함)
+  checkCompleteBanner();
+
+  // 목표 달성 체크 — if/else 밖에서 항상 실행
   const newTotal = updateProgress();
   if (newTotal >= (MAX_VOTES * 2)) {
     setTimeout(() => {
@@ -456,29 +485,27 @@ function switchTab(cat, btn) {
 function openResult() {
   const currentStickers = updateProgress();
   if (currentStickers < (MAX_VOTES * 2)) {
-    let currentVoters = Math.floor(currentStickers / 2);
-    alert(`🔒 아직 결과 공개 전입니다!\n목표 인원(${MAX_VOTES}명)이 모두 투표를 완료해야 결과를 볼 수 있습니다.\n(현재 참여: ${currentVoters}명)`);
+    alert(`🔒 아직 결과 공개 전입니다!\n목표 인원(${MAX_VOTES}명)이 모두 투표를 완료해야 결과를 볼 수 있습니다.\n(현재 참여: ${Math.floor(currentStickers / 2)}명)`);
     return;
   }
 
-  const votes = globalVotes;
-  function score(cat, i) { return STICKERS.reduce((s, e) => s + (votes[cat+'_'+i+'_'+e]||0), 0); }
+  function score(cat, i) { return STICKERS.reduce((s, e) => s + (globalVotes[cat+'_'+i+'_'+e]||0), 0); }
   function buildRank(cat) { return CHILDREN.map((name,i) => ({name, i, s: score(cat,i)})).sort((a,b) => b.s - a.s); }
 
   const medals = ['🥇 1등','🥈 2등','🥉 3등','4등','5등','6등','7등','8등','9등'];
   function renderRank(list) {
     return list.map((it,rank) => `
       <li>
-        <span style="min-width:60px; font-weight:700; color:#d63031">${medals[rank]}</span>
-        <span style="flex:1; color:#2c3e50">${it.name} (No.${it.i+1})</span>
+        <span style="min-width:60px;font-weight:700;color:#d63031">${medals[rank]}</span>
+        <span style="flex:1;color:#2c3e50">${it.name} (No.${it.i+1})</span>
         <span style="font-weight:700;">${it.s}표</span>
       </li>`).join('');
   }
 
   document.getElementById('result-content').innerHTML = `
-    <h3 style="color:#2980b9; margin-bottom:10px;">🌿 풍경사진 순위</h3>
+    <h3 style="color:#2980b9;margin-bottom:10px;">🌿 풍경사진 순위</h3>
     <ul class="result-list">${renderRank(buildRank('landscape'))}</ul>
-    <h3 style="color:#2980b9; margin-bottom:10px;">👧 인물사진 순위</h3>
+    <h3 style="color:#2980b9;margin-bottom:10px;">👧 인물사진 순위</h3>
     <ul class="result-list">${renderRank(buildRank('portrait'))}</ul>
   `;
   document.getElementById('modal-result').classList.add('open');
@@ -489,9 +516,31 @@ function openAdmin() {
   document.getElementById('modal-pw').classList.add('open');
 }
 
+// 관리 패널 열릴 때 현재 값 표시
+function buildAdminPanel() {
+  document.getElementById('max-votes-input').value = MAX_VOTES;
+  document.getElementById('max-votes-current').textContent = `현재 설정: ${MAX_VOTES}명 (결과 잠금 해제 기준: ${MAX_VOTES * 2}개 스티커)`;
+}
+
+// 목표 인원 저장
+function applyMaxVotes() {
+  const val = parseInt(document.getElementById('max-votes-input').value);
+  if (isNaN(val) || val < 1 || val > 9999) {
+    alert('1~9999 사이의 숫자를 입력해주세요.');
+    return;
+  }
+  MAX_VOTES = val;
+  localStorage.setItem(KEY_MAX_VOTES, val);
+  document.getElementById('max-votes-current').textContent = `현재 설정: ${MAX_VOTES}명 (결과 잠금 해제 기준: ${MAX_VOTES * 2}개 스티커)`;
+  updateProgress();
+  showToast(`목표 인원이 ${val}명으로 설정되었습니다 ✅`);
+}
+
 function checkPw() {
   if (document.getElementById('pw-input').value === ADMIN_PW) {
-    closeModal('pw'); document.getElementById('modal-admin').classList.add('open');
+    closeModal('pw');
+    buildAdminPanel(); // 현재 MAX_VOTES 값 입력창에 표시
+    document.getElementById('modal-admin').classList.add('open');
   } else { alert('비밀번호가 틀렸습니다.'); }
 }
 
@@ -502,18 +551,31 @@ function clearDBVotes() {
   saveVotesToDB();
   initShuffle();
   renderGrids();
-  document.getElementById('complete-banner').classList.remove('show');
+  checkCompleteBanner();
   closeModal('admin');
   showToast('서버의 투표 기록이 초기화되었습니다! ✨');
 }
 
 function closeModal(name) { document.getElementById('modal-' + name).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(el => { el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }); });
+
+// 모달 바깥 클릭 닫기
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ✅ FIX 4: ESC 키로 모달 닫기 (이전 버전에서 누락됐던 기능 복구)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
 
 let toastTimer;
 function showToast(msg) {
-  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 window.onload = loadDataFromDB;
