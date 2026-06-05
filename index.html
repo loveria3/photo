@@ -311,7 +311,7 @@ function doVote(pid, emoji, cat) {
   const votes   = getVotes();
   const myVotes = getMyVotes();
   const vk      = pid + '_' + emoji;
-  const catName = cat === 'landscape' ? '🌿 풍경사진' : '👧 인물사진'; // 💡 미션 이름 구분
+  const catName = cat === 'landscape' ? '🌿 풍경사진' : '👧 인물사진'; 
   
   let currentTotal = updateProgress();
   if (currentTotal >= MAX_VOTES && !myVotes[vk]) {
@@ -334,7 +334,7 @@ function doVote(pid, emoji, cat) {
   } else {
     votes[vk] = (votes[vk]||0) + 1;
     myVotes[vk] = true;
-    showToast(`${catName} 선택이 완료되었습니다! ${emoji}`); // 💡 맞춤형 완료 알림
+    showToast(`${catName} 선택이 완료되었습니다! ${emoji}`); 
   }
 
   saveVotes(votes); saveMyVotes(myVotes);
@@ -358,7 +358,14 @@ function switchTab(cat, btn) {
   btn.classList.add('active');
 }
 
+// 💡 결과 보기 함수 수정: 50명 미달 시 접근 차단 로직 추가
 function openResult() {
+  const currentTotal = updateProgress();
+  if (currentTotal < MAX_VOTES) {
+    alert(`🔒 아직 결과 공개 전입니다!\n목표 인원(${MAX_VOTES}명)이 모두 투표를 완료해야 결과를 볼 수 있습니다.\n(현재 참여: ${currentTotal}명)`);
+    return;
+  }
+
   const votes = getVotes();
   function score(cat, i) { return STICKERS.reduce((s, e) => s + (votes[cat+'_'+i+'_'+e]||0), 0); }
   function buildRank(cat) { return CHILDREN.map((name,i) => ({name, i, s: score(cat,i)})).sort((a,b) => b.s - a.s); }
